@@ -7,9 +7,17 @@ const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 function escapeHtml(s=''){return s.replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 function formatText(s=''){return escapeHtml(s).replace(/\n/g,'<br>');}
+function formatCitation(c={}){
+  const title=escapeHtml(c.title||'Source');
+  const dates=[];
+  if(c.published_date) dates.push(`published ${escapeHtml(c.published_date)}`);
+  if(c.incident_date) dates.push(`incident ${escapeHtml(c.incident_date)}`);
+  const label=dates.length?`${title} (${dates.join('; ')})`:title;
+  return c.url?`<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener">${label}</a>`:label;
+}
 function addMessage(role, text, source='', citations=[]){
   const wrap=document.createElement('div'); wrap.className=`message ${role}`;
-  const citeHtml=citations.length?`<div class="citations"><strong>Sources</strong><br>${citations.map(c=>c.url?`<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener">${escapeHtml(c.title)}</a>`:escapeHtml(c.title)).join('<br>')}</div>`:'';
+  const citeHtml=citations.length?`<div class="citations"><strong>Sources</strong><br>${citations.map(formatCitation).join('<br>')}</div>`:'';
   wrap.innerHTML=`<div class="avatar">AI</div><div class="bubble">${formatText(text)}${source?`<div class="answer-source">Source: ${escapeHtml(source)}</div>`:''}${citeHtml}</div>`;
   chat.appendChild(wrap); chat.scrollTop=chat.scrollHeight;
 }
