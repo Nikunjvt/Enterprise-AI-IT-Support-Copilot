@@ -3,6 +3,7 @@ const form = document.getElementById('chatForm');
 const question = document.getElementById('question');
 const trace = document.getElementById('trace');
 const sourceUsed = document.getElementById('sourceUsed');
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 function escapeHtml(s=''){return s.replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 function formatText(s=''){return escapeHtml(s).replace(/\n/g,'<br>');}
@@ -30,8 +31,10 @@ const modal=document.getElementById('uploadModal');
 document.getElementById('openUpload').onclick=()=>modal.classList.remove('hidden');
 document.getElementById('closeUpload').onclick=()=>modal.classList.add('hidden');
 document.getElementById('uploadBtn').onclick=async()=>{
-  const file=document.getElementById('fileInput').files[0]; const key=document.getElementById('adminKey').value; const status=document.getElementById('uploadStatus');
+  const uploadBtn=document.getElementById('uploadBtn'); const file=document.getElementById('fileInput').files[0]; const key=document.getElementById('adminKey').value; const status=document.getElementById('uploadStatus');
   if(!file){status.textContent='Choose a file first.'; return;}
+  if(file.size>MAX_UPLOAD_BYTES){status.textContent='File exceeds the 10 MB upload limit.'; return;}
   status.textContent='Indexing document...'; const fd=new FormData(); fd.append('file',file);
-  try{const r=await fetch('/api/ingest',{method:'POST',headers:{'X-Admin-Key':key},body:fd}); const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Upload failed'); status.textContent=`Indexed ${d.file}: ${d.chunks} chunks.`;}catch(e){status.textContent=`Error: ${e.message}`;}
+  uploadBtn.disabled=true;
+  try{const r=await fetch('/api/ingest',{method:'POST',headers:{'X-Admin-Key':key},body:fd}); const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Upload failed'); status.textContent=`Indexed ${d.file}: ${d.chunks} chunks.`;}catch(e){status.textContent=`Error: ${e.message}`;}finally{uploadBtn.disabled=false;}
 };

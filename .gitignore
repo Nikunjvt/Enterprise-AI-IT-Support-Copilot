@@ -226,6 +226,7 @@ __marimo__/
 *.sqlite
 *.sqlite3
 uploads/
+phase3_upload_smoke_test.md
 .vscode/
 __pycache__/
 *.pyc

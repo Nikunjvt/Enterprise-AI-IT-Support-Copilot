@@ -16,6 +16,15 @@ def init_db() -> None:
             trace_json TEXT NOT NULL
         )"""
     )
+    con.execute(
+        """CREATE TABLE IF NOT EXISTS ingest_audit (
+            content_sha256 TEXT PRIMARY KEY,
+            original_filename TEXT NOT NULL,
+            chunks INTEGER NOT NULL,
+            vectors INTEGER NOT NULL,
+            created_at TEXT NOT NULL
+        )"""
+    )
     con.commit()
     con.close()
 
@@ -24,6 +33,32 @@ def write_audit(question: str, source_used: str, trace: list[str]) -> None:
     con.execute(
         "INSERT INTO query_audit(created_at, question, source_used, trace_json) VALUES (?, ?, ?, ?)",
         (datetime.now(timezone.utc).isoformat(), question, source_used, json.dumps(trace)),
+    )
+    con.commit()
+    con.close()
+
+
+def has_ingested_hash(content_sha256: str) -> bool:
+    con = sqlite3.connect(settings.audit_db_path)
+    row = con.execute(
+        "SELECT 1 FROM ingest_audit WHERE content_sha256 = ? LIMIT 1",
+        (content_sha256,),
+    ).fetchone()
+    con.close()
+    return row is not None
+
+
+def write_ingest_audit(
+    content_sha256: str,
+    original_filename: str,
+    chunks: int,
+    vectors: int,
+) -> None:
+    con = sqlite3.connect(settings.audit_db_path)
+    con.execute(
+        "INSERT INTO ingest_audit(content_sha256, original_filename, chunks, vectors, created_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (content_sha256, original_filename, chunks, vectors, datetime.now(timezone.utc).isoformat()),
     )
     con.commit()
     con.close()

@@ -1,6 +1,6 @@
 # Enterprise IT Support Agentic RAG Copilot
 
-An end-to-end **Forward Deployed Engineer (FDE) project** that turns a notebook-style Agentic RAG workflow into a deployable internal product using **LangGraph, FastAPI, Pinecone, Groq, Tavily, HTML, CSS, and JavaScript**.
+An end-to-end **Forward Deployed Engineer (FDE) project** that turns a notebook-style Agentic RAG workflow into a deployable internal product using **LangGraph, FastAPI, Pinecone, OpenAI, Tavily, HTML, CSS, and JavaScript**.
 
 ---
 
@@ -111,7 +111,7 @@ This repository demonstrates each layer.
                └──────────────┬──────────────┘
                               ▼
                      ┌────────────────┐
-                     │ Groq LLM       │
+                     │ OpenAI LLM     │
                      │ Grounded Answer│
                      └────────────────┘
 ```
@@ -185,13 +185,13 @@ The system therefore controls **what to do next** based on its current state.
 | Layer | Technology | Purpose |
 |---|---|---|
 | Agent workflow | LangGraph | Stateful routing and conditional decisions |
-| LLM | Groq | Routing, grading, rewriting, answer generation |
-| Embeddings | HuggingFace `all-MiniLM-L6-v2` | Local 384-dimensional embeddings |
+| LLM | OpenAI `gpt-4o-mini` | Routing, grading, rewriting, answer generation |
+| Embeddings | OpenAI `text-embedding-3-small` | 1536-dimensional embeddings |
 | Vector DB | Pinecone | Private enterprise knowledge base |
 | External search | Tavily | Fallback when company KB is insufficient |
 | API | FastAPI | Backend and REST endpoints |
 | Frontend | HTML/CSS/JavaScript | Employee-facing interface |
-| Audit | SQLite | Basic decision-path logging |
+| Audit | SQLite | Query and document-ingestion audit logging |
 | Packaging | Docker | Reproducible deployment |
 
 ---
@@ -248,28 +248,31 @@ FDE_Agentic_RAG_IT_Copilot/
 
 ## 7. Setup
 
-### Step 1 — Create virtual environment
+### Step 1 — Use the supported Windows Conda environment
 
-```bash
-python -m venv venv
+```powershell
+conda create -n it-copilot python=3.11
+conda activate it-copilot
 ```
 
-Windows:
+The validated interpreter is:
 
-```bash
-venv\Scripts\activate
+```text
+C:\Users\Nikunj\miniconda3\envs\it-copilot\python.exe
 ```
 
-macOS/Linux:
+Use it explicitly for project commands:
 
-```bash
-source venv/bin/activate
+```powershell
+$py = "C:\Users\Nikunj\miniconda3\envs\it-copilot\python.exe"
+$py -m pip install -r requirements.txt
+$py -m pip check
 ```
 
 ### Step 2 — Install dependencies
 
-```bash
-pip install -r requirements.txt
+```powershell
+C:\Users\Nikunj\miniconda3\envs\it-copilot\python.exe -m pip install -r requirements.txt
 ```
 
 ### Step 3 — Configure environment
@@ -277,45 +280,40 @@ pip install -r requirements.txt
 Create a `.env` file in the project root directory with the following variables:
 
 ```env
-# LLM API Keys
-GROQ_API_KEY=your_groq_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here
+# LLM
+OPENAI_API_KEY=replace_with_openai_key
+OPENAI_MODEL=gpt-4o-mini
 
-# External Search
-TAVILY_API_KEY=your_tavily_api_key_here
+# External web fallback
+TAVILY_API_KEY=replace_with_tavily_key
 
-# Vector Database (Pinecone)
-PINECONE_API_KEY=your_pinecone_api_key_here
+# Vector database
+PINECONE_API_KEY=replace_with_pinecone_key
 PINECONE_INDEX_NAME=fde-it-support-rag
 PINECONE_NAMESPACE=company-it-kb
-
-# LLM Models
-GROQ_MODEL=openai/gpt-oss-20b
-OPENAI_MODEL=gpt-4o-mini
 EMBEDDING_MODEL=text-embedding-3-small
 
-# Security
-ADMIN_API_KEY=change-me-in-production
-
-# Application Settings
 APP_ENV=development
+MAX_UPLOAD_BYTES=10485760
+
+# Security
+ADMIN_API_KEY=replace_with_long_random_admin_key
 ```
 
 #### Environment Variable Reference
 
 | Variable | Description | Example | Required |
 |---|---|---|---|
-| `GROQ_API_KEY` | API key for Groq LLM (routing, grading, generation) | `gsk_...` | ✅ Yes |
-| `OPENAI_API_KEY` | API key for OpenAI (embeddings and fallback LLM) | `sk-...` | ✅ Yes |
-| `TAVILY_API_KEY` | API key for Tavily web search | `tvly-...` | ✅ Yes |
-| `PINECONE_API_KEY` | API key for Pinecone vector database | `pckey-...` | ✅ Yes |
+| `OPENAI_API_KEY` | OpenAI key for the LLM and embeddings | `replace_with_openai_key` | Yes |
+| `TAVILY_API_KEY` | Tavily key for web fallback | `replace_with_tavily_key` | Yes for web fallback |
+| `PINECONE_API_KEY` | Pinecone vector database key | `replace_with_pinecone_key` | Yes |
 | `PINECONE_INDEX_NAME` | Pinecone index name | `fde-it-support-rag` | ⚠️ Optional (default: `fde-it-support-rag`) |
 | `PINECONE_NAMESPACE` | Pinecone namespace for document isolation | `company-it-kb` | ⚠️ Optional (default: `company-it-kb`) |
-| `GROQ_MODEL` | Groq model identifier | `openai/gpt-oss-20b` | ⚠️ Optional (default: `openai/gpt-oss-20b`) |
-| `OPENAI_MODEL` | OpenAI model identifier | `gpt-4o-mini` | ⚠️ Optional (default: `gpt-4o-mini`) |
-| `EMBEDDING_MODEL` | Embedding model for vectorization | `text-embedding-3-small` | ⚠️ Optional (default: `text-embedding-3-small`) |
-| `ADMIN_API_KEY` | Secret key for admin endpoints (document ingestion) | `your-secure-key` | ⚠️ Optional (default: `change-me`) |
-| `APP_ENV` | Application environment | `development` or `production` | ⚠️ Optional (default: `development`) |
+| `OPENAI_MODEL` | OpenAI chat model | `gpt-4o-mini` | Optional |
+| `EMBEDDING_MODEL` | OpenAI embedding model | `text-embedding-3-small` | Optional |
+| `ADMIN_API_KEY` | Secret for `POST /api/ingest` | `replace_with_long_random_admin_key` | Required for uploads |
+| `MAX_UPLOAD_BYTES` | Maximum upload size | `10485760` | Optional |
+| `APP_ENV` | Application environment | `development` or `production` | Optional |
 
 **⚠️ Important Security Notes:**
 
@@ -326,8 +324,8 @@ APP_ENV=development
 
 ### Step 4 — Load sample company knowledge
 
-```bash
-python ingest_sample_kb.py
+```powershell
+C:\Users\Nikunj\miniconda3\envs\it-copilot\python.exe ingest_sample_kb.py
 ```
 
 This demonstrates the RAG ingestion pipeline:
@@ -339,27 +337,27 @@ Load Documents
    ↓
 Chunk Text
    ↓
-HuggingFace Embeddings
+OpenAI Embeddings
    ↓
 Pinecone Vector Database
 ```
 
 ### Step 5 — Run the application
 
-```bash
-python run.py
+```powershell
+C:\Users\Nikunj\miniconda3\envs\it-copilot\python.exe run.py
 ```
 
 Open:
 
 ```text
-http://127.0.0.1:8000
+http://127.0.0.1:8080
 ```
 
 FastAPI API docs:
 
 ```text
-http://127.0.0.1:8000/docs
+http://127.0.0.1:8080/docs
 ```
 
 ---
@@ -484,15 +482,15 @@ The backend performs:
 ```text
 Upload
   ↓
-Validate Type
+Validate admin key, extension, size, and readable content
   ↓
-Load Text
+Hash and duplicate check
   ↓
 Recursive Chunking
   ↓
 Embeddings
   ↓
-Pinecone Indexing
+Pinecone Indexing and SQLite ingestion audit
   ↓
 Immediately Available for Retrieval
 ```
@@ -537,7 +535,24 @@ Response contains:
 
 Protected by the `X-Admin-Key` request header.
 
-Uploads a document and adds its chunks to Pinecone.
+Uploads one PDF, TXT, Markdown, or DOCX document and adds its chunks to Pinecone.
+
+Required header:
+
+```text
+X-Admin-Key: <ADMIN_API_KEY>
+```
+
+The endpoint rejects invalid keys (`401`), unsupported extensions (`400`), missing files (`422`), empty or unreadable files (`400`), oversized files (`413`), and duplicate content (`409`). Successful uploads use generated storage names and create an ingestion audit record.
+
+## 11. Production-readiness limitations
+
+- The upload limit is enforced in the application; production deployments should also enforce body limits at the reverse proxy.
+- The admin-key header is suitable for this internal demo but should be replaced with managed identity, rotation, rate limiting, HTTPS, and authorization scopes.
+- Duplicate tracking covers documents uploaded through this endpoint. Existing vectors ingested by older scripts are not automatically backfilled into the local audit ledger.
+- Pinecone writes and SQLite audit writes are not one atomic transaction; a failed audit write after a successful vector write needs operational reconciliation.
+- Uploaded content should be scanned for malware and policy violations before production indexing.
+- Web citations are external information and should be validated before changing company-managed systems.
 
 ---
 
